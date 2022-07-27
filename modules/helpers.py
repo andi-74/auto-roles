@@ -5,6 +5,7 @@ import logging.handlers
 import psycopg2 as pgdb
 from urllib.parse import urlparse
 import emoji as emojis
+# import unicodedata
 
 import discord
 from discord.utils import get
@@ -339,12 +340,51 @@ def valid_role(guild, role):
             role = get(guild.roles, id=int(role))
         except ValueError:
             # EXCEPTION: received a string instead of number for int()
-            role = get(guild.roles, name=role)
             try:
+                role = get(guild.roles, id=int(role.split('&')[1][:-1]))
                 role.id
-            except AttributeError:
-                raise Exception('Could not find Discord role')
+            except:
+                # EXCEPTION: received a string instead of number for int()
+                role = get(guild.roles, name=role)
+                try:
+                    role.id
+                except:
+                    raise Exception('Could not find Discord role')
     return role
+
+# def valid_emoji(guild, emoji):
+#     try:
+#         guild = valid_guild(guild)
+#     except:
+#         raise
+
+#     # check if valid emoji obj was passed
+#     try:
+#         if emoji.id is not None:
+#             emoji_id = emoji.id
+#             alias = ':{}:'.format(emoji.name)
+    
+#     # EXCEPTION: unknown emoji has no .id attribute (this is not a valid emoji obj)
+#     except AttributeError:
+        
+#         # check if unicode emoji was passed
+#         alias = emojis.decode(emoji)
+
+#     return {'id': emoji_id, 'print': emoji, 'alias': alias}
+
+# def valid_unicode(character):
+#     try:
+#         value = hex(ord(u'{}'.format(character)))
+#         glyph = chr(int(value,16))
+    
+#     except:
+#         try:
+#             glyph = chr(int(character,16))
+#             value = hex(ord(u'{}'.format(glyph)))
+#         except:
+#             raise
+
+#     return {'value': value, 'glyph': glyph}
 
 def valid_emoji(guild, emoji):
     try:
@@ -381,7 +421,7 @@ def valid_emoji(guild, emoji):
                     # try to find unicode emoji by character (unicode symbol)
                     emoji_id = hex(ord(u'{}'.format(emoji)))
                     emoji = chr(int(emoji_id,16))
-                    alias = emojis.demojize(emoji, use_aliases=True)
+                    alias = emojis.demojize(emoji, language='alias')
                 except TypeError:
                 # EXCEPTION: received a string instead of single char for ord()
                     try:
@@ -395,7 +435,7 @@ def valid_emoji(guild, emoji):
                             # try to convert hex id to unicode char
                             emoji = chr(int(emoji,16))
                             emoji_id = hex(ord(u'{}'.format(emoji)))
-                            alias = emojis.demojize(emoji, use_aliases=True)
+                            alias = emojis.demojize(emoji, language='alias')
                         except ValueError:
                             # EXCEPTION: received some other text for int()
                             try:
@@ -405,14 +445,14 @@ def valid_emoji(guild, emoji):
                                 # try again to find unicode emoji by first character only (unicode symbol)
                                 emoji_id = hex(ord(u'{}'.format(emoji[0])))
                                 emoji = chr(int(emoji_id,16))
-                                alias = emojis.demojize(emoji, use_aliases=True)
+                                alias = emojis.demojize(emoji, language='alias')
                             except TypeError:
                                 # skipped unicode symbol check
                                 try:
                                     # try to find unicode emoji by alias
-                                    emoji = emojis.emojize(':{}:'.format(emoji), use_aliases=True)
+                                    emoji = emojis.emojize(':{}:'.format(emoji), language='alias')
                                     emoji_id = hex(ord(u'{}'.format(emoji)))
-                                    alias = emojis.demojize(emoji, use_aliases=True)
+                                    alias = emojis.demojize(emoji, language='alias')
                                 except TypeError:
                                     # EXCEPTION: received a string instead of single char for ord()
                                     raise Exception('Could not identify this emoji')
